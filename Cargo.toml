@@ -1,0 +1,14 @@
+[package]
+name = "monocle"
+version = "0.37.2"
+authors = ["Aram Drevekenin <aram@poor.dev>"]
+edition = "2018"
+
+[dependencies]
+zellij-tile = "0.37.2"
+ignore = "0.4.20"
+fuzzy-matcher = "0.3.7"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+unicode-width = "0.1.8"
+strip-ansi-escapes = "0.1.1"
