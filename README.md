@@ -1,8 +1,13 @@
+
+
+![preview](https://github.com/imsnif/monocle/assets/795598/67c0332c-cc05-4e59-88fa-b7f9d5e9472a)
+
 ## About
 This [Zellij][zellij] plugin is a fuzzy finder for file names and their contents.
 
 It can open results in your `$EDITOR` (scrolled to the correct line), as floating or tiled panes.
-It can open a new terminal pane to the location of the file, as a floating pane.
+
+It can open a new terminal pane to the location of the file, as a floating or tiled pane.
 
 It will ignore hidden files and respect your `.gitignore`. If you press `ESC` or `Ctrl c`, it will hide itself until you call it again.
 
@@ -28,3 +33,6 @@ shared_except "locked" {
 ## Development
 
 Load the `dev.kdl` layout from inside zellij: `zellij action new-tab -l dev.kdl` or from outside Zellij with `zellij -l dev.kdl`
+
+## Known issue
+Does not deal well with extremely large folders, PRs welcome for smart limitations.
