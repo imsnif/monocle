@@ -23,7 +23,7 @@ Add the following to your [zellij config](https://zellij.dev/documentation/confi
 ```kdl
 shared_except "locked" {
     bind "F1" {
-        LaunchOrFocusPlugin "file:strider" {
+        LaunchOrFocusPlugin "file:~/zellij-plugins/monocle" {
             floating true
         }
     }
