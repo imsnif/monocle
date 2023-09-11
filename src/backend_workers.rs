@@ -32,10 +32,10 @@ impl Search {
         match serde_json::from_str::<MessageToSearch>(&message) {
             Ok(MessageToSearch::ScanFolder) => {
                 self.scan_hd();
-                post_message_to_plugin(
-                    serde_json::to_string(&MessageToPlugin::DoneScanningFolder).unwrap(),
-                    "".to_owned(),
-                );
+                post_message_to_plugin(PluginMessage::new_to_plugin(
+                    &serde_json::to_string(&MessageToPlugin::DoneScanningFolder).unwrap(),
+                    "",
+                ));
             }
             Ok(MessageToSearch::Search) => {
                 if let Some(current_search_term) = self.read_search_term_from_hd_cache() {
@@ -105,16 +105,16 @@ impl Search {
             }
         }
         if let Some(file_names_search_results) = file_names_search_results {
-            post_message_to_plugin(
-                serde_json::to_string(&MessageToPlugin::UpdateFileNameSearchResults).unwrap(),
-                serde_json::to_string(&file_names_search_results).unwrap(),
-            );
+            post_message_to_plugin(PluginMessage::new_to_plugin(
+                &serde_json::to_string(&MessageToPlugin::UpdateFileNameSearchResults).unwrap(),
+                &serde_json::to_string(&file_names_search_results).unwrap(),
+            ));
         }
         if let Some(file_contents_search_results) = file_contents_search_results {
-            post_message_to_plugin(
-                serde_json::to_string(&MessageToPlugin::UpdateFileContentsSearchResults).unwrap(),
-                serde_json::to_string(&file_contents_search_results).unwrap(),
-            );
+            post_message_to_plugin(PluginMessage::new_to_plugin(
+                &serde_json::to_string(&MessageToPlugin::UpdateFileContentsSearchResults).unwrap(),
+                &serde_json::to_string(&file_contents_search_results).unwrap(),
+            ));
         }
     }
     pub fn rescan_files(&mut self, paths: String) {

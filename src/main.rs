@@ -4,6 +4,7 @@ mod ui;
 use zellij_tile::prelude::*;
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use backend_workers::{FileContentsWorker, FileNameWorker, MessageToPlugin, MessageToSearch};
@@ -35,8 +36,13 @@ struct State {
 }
 
 impl ZellijPlugin for State {
-    fn load(&mut self) {
+    fn load(&mut self, _config: BTreeMap<String, String>) {
         self.loading = true;
+        request_permission(&[
+            PermissionType::OpenFiles,
+            PermissionType::ChangeApplicationState,
+            PermissionType::OpenTerminalsOrPlugins,
+        ]);
         subscribe(&[
             EventType::Key,
             EventType::Mouse,
@@ -46,16 +52,16 @@ impl ZellijPlugin for State {
             EventType::FileSystemUpdate,
             EventType::FileSystemDelete,
         ]);
-        post_message_to(
+        post_message_to(PluginMessage::new_to_worker(
             "file_name_search",
             &serde_json::to_string(&MessageToSearch::ScanFolder).unwrap(),
             "",
-        );
-        post_message_to(
+        ));
+        post_message_to(PluginMessage::new_to_worker(
             "file_contents_search",
             &serde_json::to_string(&MessageToSearch::ScanFolder).unwrap(),
             "",
-        );
+        ));
         self.loading = true;
         set_timeout(0.5); // for displaying loading animation
     }
@@ -100,48 +106,48 @@ impl ZellijPlugin for State {
                     .iter()
                     .map(|p| p.to_string_lossy().to_string())
                     .collect();
-                post_message_to(
+                post_message_to(PluginMessage::new_to_worker(
                     "file_name_search",
                     &serde_json::to_string(&MessageToSearch::FileSystemCreate).unwrap(),
                     &serde_json::to_string(&paths).unwrap(),
-                );
-                post_message_to(
+                ));
+                post_message_to(PluginMessage::new_to_worker(
                     "file_contents_search",
                     &serde_json::to_string(&MessageToSearch::FileSystemCreate).unwrap(),
                     &serde_json::to_string(&paths).unwrap(),
-                );
+                ));
             }
             Event::FileSystemUpdate(paths) => {
                 let paths: Vec<String> = paths
                     .iter()
                     .map(|p| p.to_string_lossy().to_string())
                     .collect();
-                post_message_to(
+                post_message_to(PluginMessage::new_to_worker(
                     "file_name_search",
                     &serde_json::to_string(&MessageToSearch::FileSystemUpdate).unwrap(),
                     &serde_json::to_string(&paths).unwrap(),
-                );
-                post_message_to(
+                ));
+                post_message_to(PluginMessage::new_to_worker(
                     "file_contents_search",
                     &serde_json::to_string(&MessageToSearch::FileSystemUpdate).unwrap(),
                     &serde_json::to_string(&paths).unwrap(),
-                );
+                ));
             }
             Event::FileSystemDelete(paths) => {
                 let paths: Vec<String> = paths
                     .iter()
                     .map(|p| p.to_string_lossy().to_string())
                     .collect();
-                post_message_to(
+                post_message_to(PluginMessage::new_to_worker(
                     "file_name_search",
                     &serde_json::to_string(&MessageToSearch::FileSystemDelete).unwrap(),
                     &serde_json::to_string(&paths).unwrap(),
-                );
-                post_message_to(
+                ));
+                post_message_to(PluginMessage::new_to_worker(
                     "file_contents_search",
                     &serde_json::to_string(&MessageToSearch::FileSystemDelete).unwrap(),
                     &serde_json::to_string(&paths).unwrap(),
-                );
+                ));
             }
             _ => {
                 eprintln!("Unknown event: {}", event.to_string());
@@ -219,18 +225,20 @@ impl State {
         match self.selected_search_result_entry() {
             Some(SearchResult::File { path, .. }) => {
                 if self.should_open_floating {
-                    open_file_floating(&PathBuf::from(path))
+                    open_file_floating(FileToOpen::new(PathBuf::from(path)))
                 } else {
-                    open_file(&PathBuf::from(path));
+                    open_file(FileToOpen::new(PathBuf::from(path)));
                 }
             }
             Some(SearchResult::LineInFile {
                 path, line_number, ..
             }) => {
                 if self.should_open_floating {
-                    open_file_with_line_floating(&PathBuf::from(path), line_number);
+                    open_file_floating(
+                        FileToOpen::new(PathBuf::from(path)).with_line_number(line_number),
+                    );
                 } else {
-                    open_file_with_line(&PathBuf::from(path), line_number);
+                    open_file(FileToOpen::new(PathBuf::from(path)).with_line_number(line_number));
                 }
             }
             None => eprintln!("Search results not found"),
@@ -284,16 +292,16 @@ impl State {
         match std::fs::write(CURRENT_SEARCH_TERM, &self.search_term) {
             Ok(_) => {
                 if !self.search_term.is_empty() {
-                    post_message_to(
+                    post_message_to(PluginMessage::new_to_worker(
                         "file_name_search",
                         &serde_json::to_string(&MessageToSearch::Search).unwrap(),
                         "",
-                    );
-                    post_message_to(
+                    ));
+                    post_message_to(PluginMessage::new_to_worker(
                         "file_contents_search",
                         &serde_json::to_string(&MessageToSearch::Search).unwrap(),
                         "",
-                    );
+                    ));
                     self.file_name_search_results.clear();
                     self.file_contents_search_results.clear();
                 }
