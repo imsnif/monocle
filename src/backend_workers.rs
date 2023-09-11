@@ -11,6 +11,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::search_results::{ResultsOfSearch, SearchResult};
 use crate::{SearchType, CURRENT_SEARCH_TERM, ROOT};
+use zellij_utils::data::PluginMessage;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Search {
@@ -28,14 +29,15 @@ impl Search {
             ..Default::default()
         }
     }
-    fn on_message(&mut self, message: String, payload: String) {
+    fn on_message(&mut self, message: String, payload: String, worker_name: String) {
         match serde_json::from_str::<MessageToSearch>(&message) {
             Ok(MessageToSearch::ScanFolder) => {
                 self.scan_hd();
-                post_message_to_plugin(
-                    serde_json::to_string(&MessageToPlugin::DoneScanningFolder).unwrap(),
-                    "".to_owned(),
-                );
+                post_message_to_plugin(PluginMessage {
+                    worker_name: Some(worker_name.to_string()),
+                    name: serde_json::to_string(&MessageToPlugin::DoneScanningFolder).unwrap(),
+                    payload: payload,
+                });
             }
             Ok(MessageToSearch::Search) => {
                 if let Some(current_search_term) = self.read_search_term_from_hd_cache() {
@@ -105,16 +107,19 @@ impl Search {
             }
         }
         if let Some(file_names_search_results) = file_names_search_results {
-            post_message_to_plugin(
-                serde_json::to_string(&MessageToPlugin::UpdateFileNameSearchResults).unwrap(),
-                serde_json::to_string(&file_names_search_results).unwrap(),
-            );
+            post_message_to_plugin(PluginMessage {
+                name: serde_json::to_string(&MessageToPlugin::UpdateFileNameSearchResults).unwrap(),
+                payload: serde_json::to_string(&file_names_search_results).unwrap(),
+                worker_name: None,
+            });
         }
         if let Some(file_contents_search_results) = file_contents_search_results {
-            post_message_to_plugin(
-                serde_json::to_string(&MessageToPlugin::UpdateFileContentsSearchResults).unwrap(),
-                serde_json::to_string(&file_contents_search_results).unwrap(),
-            );
+            post_message_to_plugin(PluginMessage {
+                name: serde_json::to_string(&MessageToPlugin::UpdateFileContentsSearchResults)
+                    .unwrap(),
+                payload: serde_json::to_string(&file_contents_search_results).unwrap(),
+                worker_name: None,
+            });
         }
     }
     pub fn rescan_files(&mut self, paths: String) {
@@ -274,12 +279,14 @@ impl Default for FileContentsWorker {
 
 impl<'de> ZellijWorker<'de> for FileNameWorker {
     fn on_message(&mut self, message: String, payload: String) {
-        self.search.on_message(message, payload);
+        self.search
+            .on_message(message, payload, "file_name_search".to_string());
     }
 }
 
 impl<'de> ZellijWorker<'de> for FileContentsWorker {
     fn on_message(&mut self, message: String, payload: String) {
-        self.search.on_message(message, payload);
+        self.search
+            .on_message(message, payload, "file_contents_search".to_string());
     }
 }
