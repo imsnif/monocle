@@ -12,6 +12,8 @@ use unicode_width::UnicodeWidthStr;
 use crate::search_results::{ResultsOfSearch, SearchResult};
 use crate::{SearchType, CURRENT_SEARCH_TERM, ROOT};
 
+static MAX_FILE_SIZE_BYTES: u64 = 1000000;
+
 #[derive(Default, Serialize, Deserialize)]
 pub struct Search {
     search_type: SearchType,
@@ -147,7 +149,12 @@ impl Search {
         if let SearchType::NamesAndContents | SearchType::Contents = self.search_type {
             if file_metadata.map(|f| f.is_file()).unwrap_or(false) {
                 if let Ok(file) = std::fs::File::open(&file_path) {
-                    let lines = io::BufReader::new(file).lines();
+                    let file_size = file.metadata().map(|f| f.len()).unwrap_or(MAX_FILE_SIZE_BYTES);
+                    if file_size >= MAX_FILE_SIZE_BYTES {
+                        eprintln!("File {} too large, not indexing its contents", file_name.display());
+                        return;
+                    }
+                    let lines = io::BufReader::with_capacity(file_size as usize, file).lines();
                     for (index, line) in lines.enumerate() {
                         match line {
                             Ok(line) => {
