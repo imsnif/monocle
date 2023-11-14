@@ -75,15 +75,20 @@ impl State {
         let tiled_floating_control =
             Control::new_floating_control("Ctrl f", self.should_open_floating);
         let names_contents_control = Control::new_filter_control("Ctrl r", &self.search_filter);
+        let controls = if self.kiosk_mode {
+            vec![names_contents_control]
+        } else {
+            vec![tiled_floating_control, names_contents_control]
+        };
         if self.loading {
             ControlsLine::new(
-                vec![tiled_floating_control, names_contents_control],
+                controls,
                 Some(vec!["Scanning folder", "Scanning", "S"]),
             )
             .with_animation_offset(self.loading_animation_offset)
             .render(self.display_columns, has_results)
         } else {
-            ControlsLine::new(vec![tiled_floating_control, names_contents_control], None)
+            ControlsLine::new(controls, None)
                 .render(self.display_columns, has_results)
         }
     }

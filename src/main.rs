@@ -33,11 +33,13 @@ struct State {
     display_rows: usize,
     display_columns: usize,
     displayed_search_results: (usize, Vec<SearchResult>), // usize is selected index
+    kiosk_mode: bool, // in this mode, monocle only opens files on top of itself
 }
 
 impl ZellijPlugin for State {
-    fn load(&mut self, _config: BTreeMap<String, String>) {
+    fn load(&mut self, config: BTreeMap<String, String>) {
         self.loading = true;
+        self.kiosk_mode = config.get("kiosk").map(|k| k == "true").unwrap_or(false);
         request_permission(&[
             PermissionType::OpenFiles,
             PermissionType::ChangeApplicationState,
@@ -224,7 +226,9 @@ impl State {
     fn open_search_result_in_editor(&mut self) {
         match self.selected_search_result_entry() {
             Some(SearchResult::File { path, .. }) => {
-                if self.should_open_floating {
+                if self.kiosk_mode {
+                    open_file_in_place(FileToOpen::new(PathBuf::from(path)))
+                } else if self.should_open_floating {
                     open_file_floating(FileToOpen::new(PathBuf::from(path)))
                 } else {
                     open_file(FileToOpen::new(PathBuf::from(path)));
@@ -233,7 +237,9 @@ impl State {
             Some(SearchResult::LineInFile {
                 path, line_number, ..
             }) => {
-                if self.should_open_floating {
+                if self.kiosk_mode {
+                    open_file_in_place(FileToOpen::new(PathBuf::from(path)).with_line_number(line_number));
+                } else if self.should_open_floating {
                     open_file_floating(
                         FileToOpen::new(PathBuf::from(path)).with_line_number(line_number),
                     );
@@ -256,7 +262,9 @@ impl State {
             selected_search_result_entry
         {
             let dir_path = dir_path_of_result(&path);
-            if self.should_open_floating {
+            if self.kiosk_mode {
+                open_terminal_in_place(&dir_path);
+            } else if self.should_open_floating {
                 open_terminal_floating(&dir_path);
             } else {
                 open_terminal(&dir_path);
