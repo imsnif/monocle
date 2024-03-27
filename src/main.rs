@@ -40,6 +40,14 @@ impl ZellijPlugin for State {
     fn load(&mut self, config: BTreeMap<String, String>) {
         self.loading = true;
         self.kiosk_mode = config.get("kiosk").map(|k| k == "true").unwrap_or(false);
+        if let Some(search_type) = config.get("search_filter") {
+            match search_type.as_str() {
+                "file_names" => self.search_filter = SearchType::Names,
+                "file_contents" => self.search_filter = SearchType::Contents,
+                "all" => self.search_filter = SearchType::NamesAndContents,
+                _ => {}
+            }
+        }
         request_permission(&[
             PermissionType::OpenFiles,
             PermissionType::ChangeApplicationState,
