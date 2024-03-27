@@ -6,7 +6,7 @@ use ignore::Walk;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::io::{self, BufRead};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use unicode_width::UnicodeWidthStr;
 
 use crate::search_results::{ResultsOfSearch, SearchResult};
@@ -30,7 +30,7 @@ impl Search {
             ..Default::default()
         }
     }
-    fn on_message(&mut self, message: String, payload: String) {
+    fn on_message(&mut self, message: String, _payload: String) {
         match serde_json::from_str::<MessageToSearch>(&message) {
             Ok(MessageToSearch::ScanFolder) => {
                 self.scan_hd();
@@ -43,15 +43,6 @@ impl Search {
                 if let Some(current_search_term) = self.read_search_term_from_hd_cache() {
                     self.search(current_search_term);
                 }
-            }
-            Ok(MessageToSearch::FileSystemCreate) => {
-                self.rescan_files(payload);
-            }
-            Ok(MessageToSearch::FileSystemUpdate) => {
-                self.rescan_files(payload);
-            }
-            Ok(MessageToSearch::FileSystemDelete) => {
-                self.delete_files(payload);
             }
             Err(e) => eprintln!("Failed to deserialize worker message {:?}", e),
         }
@@ -117,28 +108,6 @@ impl Search {
                 &serde_json::to_string(&MessageToPlugin::UpdateFileContentsSearchResults).unwrap(),
                 &serde_json::to_string(&file_contents_search_results).unwrap(),
             ));
-        }
-    }
-    pub fn rescan_files(&mut self, paths: String) {
-        match serde_json::from_str::<Vec<PathBuf>>(&paths) {
-            Ok(paths) => {
-                for path in paths {
-                    self.add_file_entry(&path, path.metadata().ok());
-                }
-                self.cached_file_name_results.clear();
-                self.cached_file_contents_results.clear();
-            }
-            Err(e) => eprintln!("Failed to deserialize paths: {:?}", e),
-        }
-    }
-    pub fn delete_files(&mut self, paths: String) {
-        match serde_json::from_str::<Vec<PathBuf>>(&paths) {
-            Ok(paths) => {
-                self.remove_existing_entries(&paths);
-                self.cached_file_name_results.clear();
-                self.cached_file_contents_results.clear();
-            }
-            Err(e) => eprintln!("Failed to deserialize paths: {:?}", e),
         }
     }
     fn add_file_entry(&mut self, file_name: &Path, file_metadata: Option<std::fs::Metadata>) {
@@ -226,24 +195,12 @@ impl Search {
             _ => None,
         }
     }
-    fn remove_existing_entries(&mut self, paths: &Vec<PathBuf>) {
-        let file_path_stripped_prefixes: Vec<String> =
-            paths.iter().map(|p| self.strip_file_prefix(&p)).collect();
-        self.file_names
-            .retain(|file_name| !file_path_stripped_prefixes.contains(file_name));
-        self.file_contents.retain(|(file_name, _line_in_file), _| {
-            !file_path_stripped_prefixes.contains(file_name)
-        });
-    }
 }
 
 #[derive(Serialize, Deserialize)]
 pub enum MessageToSearch {
     ScanFolder,
     Search,
-    FileSystemCreate,
-    FileSystemUpdate,
-    FileSystemDelete,
 }
 
 #[derive(Serialize, Deserialize)]

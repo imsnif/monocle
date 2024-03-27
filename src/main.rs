@@ -50,9 +50,6 @@ impl ZellijPlugin for State {
             EventType::Mouse,
             EventType::CustomMessage,
             EventType::Timer,
-            EventType::FileSystemCreate,
-            EventType::FileSystemUpdate,
-            EventType::FileSystemDelete,
         ]);
         post_message_to(PluginMessage::new_to_worker(
             "file_name_search",
@@ -102,54 +99,6 @@ impl ZellijPlugin for State {
             Event::Key(key) => {
                 self.handle_key(key);
                 should_render = true;
-            }
-            Event::FileSystemCreate(paths) => {
-                let paths: Vec<String> = paths
-                    .iter()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .collect();
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_name_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemCreate).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_contents_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemCreate).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-            }
-            Event::FileSystemUpdate(paths) => {
-                let paths: Vec<String> = paths
-                    .iter()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .collect();
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_name_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemUpdate).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_contents_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemUpdate).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-            }
-            Event::FileSystemDelete(paths) => {
-                let paths: Vec<String> = paths
-                    .iter()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .collect();
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_name_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemDelete).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_contents_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemDelete).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
             }
             _ => {
                 eprintln!("Unknown event: {}", event.to_string());
