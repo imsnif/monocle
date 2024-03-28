@@ -71,7 +71,6 @@ impl State {
         }
     }
     pub fn render_controls_line(&self) -> String {
-        let has_results = !self.displayed_search_results.1.is_empty();
         let tiled_floating_control =
             Control::new_floating_control("Ctrl f", self.should_open_floating);
         let names_contents_control = Control::new_filter_control("Ctrl r", &self.search_filter);
@@ -86,10 +85,10 @@ impl State {
                 Some(vec!["Scanning folder", "Scanning", "S"]),
             )
             .with_animation_offset(self.loading_animation_offset)
-            .render(self.display_columns, has_results)
+            .render(self.display_columns)
         } else {
             ControlsLine::new(controls, None)
-                .render(self.display_columns, has_results)
+                .render(self.display_columns)
         }
     }
 }

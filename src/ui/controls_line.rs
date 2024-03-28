@@ -23,14 +23,7 @@ impl ControlsLine {
         self.animation_offset = animation_offset;
         self
     }
-    pub fn render(&self, max_width: usize, show_controls: bool) -> String {
-        if show_controls {
-            self.render_controls(max_width)
-        } else {
-            self.render_empty_line(max_width)
-        }
-    }
-    pub fn render_controls(&self, max_width: usize) -> String {
+    pub fn render(&self, max_width: usize) -> String {
         let loading_animation =
             LoadingAnimation::new(&self.scanning_indication, self.animation_offset);
         let full_length = loading_animation.full_len()

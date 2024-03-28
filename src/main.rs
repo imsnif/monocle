@@ -40,6 +40,14 @@ impl ZellijPlugin for State {
     fn load(&mut self, config: BTreeMap<String, String>) {
         self.loading = true;
         self.kiosk_mode = config.get("kiosk").map(|k| k == "true").unwrap_or(false);
+        if let Some(search_type) = config.get("search_filter") {
+            match search_type.as_str() {
+                "file_names" => self.search_filter = SearchType::Names,
+                "file_contents" => self.search_filter = SearchType::Contents,
+                "all" => self.search_filter = SearchType::NamesAndContents,
+                _ => {}
+            }
+        }
         request_permission(&[
             PermissionType::OpenFiles,
             PermissionType::ChangeApplicationState,
@@ -50,9 +58,6 @@ impl ZellijPlugin for State {
             EventType::Mouse,
             EventType::CustomMessage,
             EventType::Timer,
-            EventType::FileSystemCreate,
-            EventType::FileSystemUpdate,
-            EventType::FileSystemDelete,
         ]);
         post_message_to(PluginMessage::new_to_worker(
             "file_name_search",
@@ -102,54 +107,6 @@ impl ZellijPlugin for State {
             Event::Key(key) => {
                 self.handle_key(key);
                 should_render = true;
-            }
-            Event::FileSystemCreate(paths) => {
-                let paths: Vec<String> = paths
-                    .iter()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .collect();
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_name_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemCreate).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_contents_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemCreate).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-            }
-            Event::FileSystemUpdate(paths) => {
-                let paths: Vec<String> = paths
-                    .iter()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .collect();
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_name_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemUpdate).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_contents_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemUpdate).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-            }
-            Event::FileSystemDelete(paths) => {
-                let paths: Vec<String> = paths
-                    .iter()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .collect();
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_name_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemDelete).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
-                post_message_to(PluginMessage::new_to_worker(
-                    "file_contents_search",
-                    &serde_json::to_string(&MessageToSearch::FileSystemDelete).unwrap(),
-                    &serde_json::to_string(&paths).unwrap(),
-                ));
             }
             _ => {
                 eprintln!("Unknown event: {}", event.to_string());

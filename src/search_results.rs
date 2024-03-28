@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unicode_width::UnicodeWidthStr;
+use unicode_width::{UnicodeWidthStr, UnicodeWidthChar};
 
 use crate::ui::{
     bold, styled_text, styled_text_background, styled_text_foreground, underline, GRAY_LIGHT,
@@ -233,27 +233,35 @@ impl SearchResult {
         let truncate_end_position = truncate_positions
             .map(|p| p.1)
             .unwrap_or(line_to_render.chars().count());
+
+        let left_truncate_sign = if truncate_start_position == 0 {
+            ""
+        } else {
+            ".."
+        };
+        let right_truncate_sign = if truncate_end_position == line_to_render.chars().count() {
+            ""
+        } else {
+            ".."
+        };
+
+        let max_width_for_visible_portion = max_width.saturating_sub(left_truncate_sign.chars().count()).saturating_sub(right_truncate_sign.chars().count());
         let mut visible_portion = String::new();
+        let mut visible_characters = String::new();
         for (i, character) in line_to_render.chars().enumerate() {
+            if visible_characters.width() + character.width().unwrap_or(0) > max_width_for_visible_portion {
+                break;
+            }
             if i >= truncate_start_position && i <= truncate_end_position {
                 if indices.contains(&i) {
                     visible_portion.push_str(&index_character_style(&character.to_string()));
                 } else {
                     visible_portion.push_str(&non_index_character_style(&character.to_string()));
                 }
+                visible_characters.push(character);
             }
         }
         if truncate_positions.is_some() {
-            let left_truncate_sign = if truncate_start_position == 0 {
-                ""
-            } else {
-                ".."
-            };
-            let right_truncate_sign = if truncate_end_position == line_to_render.chars().count() {
-                ""
-            } else {
-                ".."
-            };
             format!(
                 "{}{}{}",
                 non_index_character_style(left_truncate_sign),
@@ -292,7 +300,7 @@ impl SearchResult {
                 if i >= width_remaining {
                     break;
                 }
-                if string_start_position > 0 && string_end_position < line_to_render.chars().count()
+                if string_start_position > 0 && string_end_position < line_to_render.width()
                 {
                     let take_from_start = i % 2 == 0;
                     if take_from_start {
@@ -302,13 +310,13 @@ impl SearchResult {
                         }
                     } else {
                         string_end_position += 1;
-                        if string_end_position == line_to_render.chars().count() {
+                        if string_end_position == line_to_render.width() {
                             width_remaining += 2; // no need for truncating dots
                         }
                     }
-                } else if string_end_position < line_to_render.chars().count() {
+                } else if string_end_position < line_to_render.width() {
                     string_end_position += 1;
-                    if string_end_position == line_to_render.chars().count() {
+                    if string_end_position == line_to_render.width() {
                         width_remaining += 2; // no need for truncating dots
                     }
                 } else if string_start_position > 0 {
