@@ -184,12 +184,13 @@ impl State {
         match self.selected_search_result_entry() {
             Some(SearchResult::File { path, .. }) => {
                 if self.kiosk_mode {
-                    open_file_in_place(FileToOpen::new(PathBuf::from(path)))
+                    open_file_in_place(FileToOpen::new(PathBuf::from(path)));
                 } else if self.should_open_floating {
-                    open_file_floating(FileToOpen::new(PathBuf::from(path)))
+                    open_file_floating(FileToOpen::new(PathBuf::from(path)), None)
                 } else {
                     open_file(FileToOpen::new(PathBuf::from(path)));
                 }
+                close_self();
             }
             Some(SearchResult::LineInFile {
                 path, line_number, ..
@@ -199,10 +200,12 @@ impl State {
                 } else if self.should_open_floating {
                     open_file_floating(
                         FileToOpen::new(PathBuf::from(path)).with_line_number(line_number),
+                        None,
                     );
                 } else {
                     open_file(FileToOpen::new(PathBuf::from(path)).with_line_number(line_number));
                 }
+                close_self();
             }
             None => eprintln!("Search results not found"),
         }
@@ -222,7 +225,7 @@ impl State {
             if self.kiosk_mode {
                 open_terminal_in_place(&dir_path);
             } else if self.should_open_floating {
-                open_terminal_floating(&dir_path);
+                open_terminal_floating(&dir_path, None);
             } else {
                 open_terminal(&dir_path);
             }
