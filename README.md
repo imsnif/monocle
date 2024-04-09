@@ -23,7 +23,7 @@ zellij plugin -- https://github.com/imsnif/monocle/releases/latest/download/mono
 ## Permanent Installation
 1. Download the `monocle.wasm` file from the latest release
 2. Place it in `~/.config/zellij/plugins`
-3. From inside Zellij, run `zellij plugin [--floating] [--in-place] -- file:~/zellij/plugins/monocle.wasm`
+3. From inside Zellij, run `zellij plugin [--floating] [--in-place] -- file:~/.config/zellij/plugins/monocle.wasm`
 
 ## Kiosk Mode
 Monocle can be stared in "Kiosk Mode" - meaning that it will open files on top of itself instead of in a new pane. This can be especially powerful when combined with opening the monocle plugin itself "in-place".
