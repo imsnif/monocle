@@ -118,9 +118,15 @@ impl Search {
         if let SearchType::NamesAndContents | SearchType::Contents = self.search_type {
             if file_metadata.map(|f| f.is_file()).unwrap_or(false) {
                 if let Ok(file) = std::fs::File::open(&file_path) {
-                    let file_size = file.metadata().map(|f| f.len()).unwrap_or(MAX_FILE_SIZE_BYTES);
+                    let file_size = file
+                        .metadata()
+                        .map(|f| f.len())
+                        .unwrap_or(MAX_FILE_SIZE_BYTES);
                     if file_size >= MAX_FILE_SIZE_BYTES {
-                        eprintln!("File {} too large, not indexing its contents", file_name.display());
+                        eprintln!(
+                            "File {} too large, not indexing its contents",
+                            file_name.display()
+                        );
                         return;
                     }
                     let lines = io::BufReader::with_capacity(file_size as usize, file).lines();
@@ -129,10 +135,8 @@ impl Search {
                             Ok(line) => {
                                 self.file_contents.insert(
                                     (file_path_stripped_prefix.clone(), index + 1),
-                                    String::from_utf8_lossy(
-                                        &strip_ansi_escapes::strip(line).unwrap(),
-                                    )
-                                    .to_string(),
+                                    String::from_utf8_lossy(&strip_ansi_escapes::strip(line))
+                                        .to_string(),
                                 );
                             }
                             Err(_) => {
