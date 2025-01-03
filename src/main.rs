@@ -126,7 +126,7 @@ impl State {
             BareKey::Down => self.move_search_selection_down(),
             BareKey::Up => self.move_search_selection_up(),
             BareKey::Enter => self.open_search_result_in_editor(),
-            BareKey::Tab if key.has_modifiers(&[KeyModifier::Ctrl]) => {
+            BareKey::Tab => {
                 self.open_search_result_in_terminal()
             }
             BareKey::Char('f') if key.has_modifiers(&[KeyModifier::Ctrl]) => {
