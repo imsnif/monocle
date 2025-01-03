@@ -22,10 +22,10 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: '1.76.0'
+          toolchain: '1.83.0'
           profile: minimal
           override: true
-          target: wasm32-wasi
+          target: wasm32-wasip1
 
       - name: Build release binary
         run: cargo build --release
