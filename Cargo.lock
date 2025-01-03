@@ -1723,7 +1723,7 @@ dependencies = [
 
 [[package]]
 name = "monocle"
-version = "0.39.0"
+version = "0.100.1"
 dependencies = [
  "fuzzy-matcher",
  "ignore",
