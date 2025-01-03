@@ -135,7 +135,14 @@ impl State {
             BareKey::Char('r') if key.has_modifiers(&[KeyModifier::Ctrl]) => {
                 self.toggle_search_filter()
             }
-            BareKey::Esc | BareKey::Char('c') if key.has_modifiers(&[KeyModifier::Ctrl]) => {
+            BareKey::Esc => {
+                if !self.search_term.is_empty() {
+                    self.clear_state();
+                } else {
+                    hide_self();
+                }
+            }
+            BareKey::Char('c') if key.has_modifiers(&[KeyModifier::Ctrl]) => {
                 if !self.search_term.is_empty() {
                     self.clear_state();
                 } else {
