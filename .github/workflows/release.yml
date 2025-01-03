@@ -47,6 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/wasm32-wasi/release/monocle.wasm
+          asset_path: ./target/wasm32-wasip1/release/monocle.wasm
           asset_name: monocle.wasm
           asset_content_type: application/octet-stream
