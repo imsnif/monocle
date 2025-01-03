@@ -121,17 +121,28 @@ impl ZellijPlugin for State {
 }
 
 impl State {
-    pub fn handle_key(&mut self, key: Key) {
-        match key {
-            Key::Down => self.move_search_selection_down(),
-            Key::Up => self.move_search_selection_up(),
-            Key::Char('\n') => self.open_search_result_in_editor(),
-            Key::BackTab => self.open_search_result_in_terminal(),
-            Key::Ctrl('f') => {
+    pub fn handle_key(&mut self, key: KeyWithModifier) {
+        match key.bare_key {
+            BareKey::Down => self.move_search_selection_down(),
+            BareKey::Up => self.move_search_selection_up(),
+            BareKey::Enter => self.open_search_result_in_editor(),
+            BareKey::Tab => {
+                self.open_search_result_in_terminal()
+            }
+            BareKey::Char('f') if key.has_modifiers(&[KeyModifier::Ctrl]) => {
                 self.should_open_floating = !self.should_open_floating;
             }
-            Key::Ctrl('r') => self.toggle_search_filter(),
-            Key::Esc | Key::Ctrl('c') => {
+            BareKey::Char('r') if key.has_modifiers(&[KeyModifier::Ctrl]) => {
+                self.toggle_search_filter()
+            }
+            BareKey::Esc => {
+                if !self.search_term.is_empty() {
+                    self.clear_state();
+                } else {
+                    hide_self();
+                }
+            }
+            BareKey::Char('c') if key.has_modifiers(&[KeyModifier::Ctrl]) => {
                 if !self.search_term.is_empty() {
                     self.clear_state();
                 } else {
@@ -183,25 +194,35 @@ impl State {
     fn open_search_result_in_editor(&mut self) {
         match self.selected_search_result_entry() {
             Some(SearchResult::File { path, .. }) => {
+                let ctx = BTreeMap::new();
                 if self.kiosk_mode {
-                    open_file_in_place(FileToOpen::new(PathBuf::from(path)))
+                    open_file_in_place(FileToOpen::new(PathBuf::from(path)), ctx)
                 } else if self.should_open_floating {
-                    open_file_floating(FileToOpen::new(PathBuf::from(path)))
+                    open_file_floating(FileToOpen::new(PathBuf::from(path)), None, ctx)
                 } else {
-                    open_file(FileToOpen::new(PathBuf::from(path)));
+                    open_file(FileToOpen::new(PathBuf::from(path)), ctx);
                 }
             }
             Some(SearchResult::LineInFile {
                 path, line_number, ..
             }) => {
+                let ctx = BTreeMap::new();
                 if self.kiosk_mode {
-                    open_file_in_place(FileToOpen::new(PathBuf::from(path)).with_line_number(line_number));
+                    open_file_in_place(
+                        FileToOpen::new(PathBuf::from(path)).with_line_number(line_number),
+                        ctx,
+                    );
                 } else if self.should_open_floating {
                     open_file_floating(
                         FileToOpen::new(PathBuf::from(path)).with_line_number(line_number),
+                        None,
+                        ctx,
                     );
                 } else {
-                    open_file(FileToOpen::new(PathBuf::from(path)).with_line_number(line_number));
+                    open_file(
+                        FileToOpen::new(PathBuf::from(path)).with_line_number(line_number),
+                        ctx,
+                    );
                 }
             }
             None => eprintln!("Search results not found"),
@@ -222,7 +243,7 @@ impl State {
             if self.kiosk_mode {
                 open_terminal_in_place(&dir_path);
             } else if self.should_open_floating {
-                open_terminal_floating(&dir_path);
+                open_terminal_floating(&dir_path, None);
             } else {
                 open_terminal(&dir_path);
             }
@@ -238,12 +259,12 @@ impl State {
         self.displayed_search_results = (0, vec![]);
         self.search_term.clear();
     }
-    fn append_to_search_term(&mut self, key: Key) {
-        match key {
-            Key::Char(character) => {
+    fn append_to_search_term(&mut self, key: KeyWithModifier) {
+        match key.bare_key {
+            BareKey::Char(character) => {
                 self.search_term.push(character);
             }
-            Key::Backspace => {
+            BareKey::Backspace => {
                 self.search_term.pop();
                 if self.search_term.len() == 0 {
                     self.clear_state();
